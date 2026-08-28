@@ -55,6 +55,8 @@ namespace wpf.gamesaver
         private void MainWindow_Closed(object? sender, EventArgs e)
         {
             _db?.Dispose();
+
+            TrySyncDatabaseToSource();
         }
 
         private void LoadGames()
@@ -311,6 +313,45 @@ namespace wpf.gamesaver
         private void BtnFontMinus_Click(object sender, RoutedEventArgs e)
         {
             if (this.FontSize > 10) this.FontSize -= 1;
+        }
+
+
+        private void TrySyncDatabaseToSource()
+        {
+#if DEBUG
+            try
+            {
+                // Текущий рабочий файл в папке bin\Debug\net10.0-windows\
+                string runningDbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DbName);
+
+                if (!File.Exists(runningDbPath)) return;
+
+                // Поднимаемся вверх из bin\Debug\net10.0-windows\, чтобы найти корень проекта с .csproj
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Переходим последовательно на 3 уровня вверх (net10.0-windows -> Debug -> bin -> корень)
+                DirectoryInfo? projectDirInfo = Directory.GetParent(baseDir)?.Parent?.Parent?.Parent;
+
+                if (projectDirInfo != null && projectDirInfo.Exists)
+                {
+                    string sourceDbPath = Path.Combine(projectDirInfo.FullName, DbName);
+
+                    // Проверяем, что в целевой папке действительно находится наш проект (ищем .csproj для безопасности)
+                    bool isCorrectProjectDir = projectDirInfo.GetFiles("*.csproj").Length > 0;
+
+                    if (isCorrectProjectDir)
+                    {
+                        // Копируем измененную базу обратно в корень проекта, перезаписывая старую
+                        File.Copy(runningDbPath, sourceDbPath, overwrite: true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Не блокируем закрытие приложения ошибкой, просто выводим предупреждение в отладку
+                System.Diagnostics.Debug.WriteLine($"Ошибка автосинхронизации БД: {ex.Message}");
+            }
+#endif
         }
     }
 }
