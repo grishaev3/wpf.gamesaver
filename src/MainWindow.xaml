@@ -5,122 +5,218 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:wpf.gamesaver"
         mc:Ignorable="d"
-        Title="Менеджер Сейвов Игр" Height="450" Width="600" MinWidth="500" MinHeight="600"
-        WindowStartupLocation="CenterScreen" Background="#1E1E1E">
+        Title="Менеджер Сейвов Игр" Height="600" Width="1024" MinWidth="800" MinHeight="600"
+        WindowStartupLocation="CenterScreen" Background="#1E1E1E" FontSize="12">
+
     <!-- Стили для элементов интерфейса в темной теме -->
     <Window.Resources>
+        <!-- Стили наследуют FontSize от окна и пропорционально уменьшаются/увеличиваются автоматически -->
         <Style x:Key="LabelStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#8A8A8A"/>
+            <!-- Устанавливаем фиксированный базовый размер. При изменении масштаба окна 
+                 WPF автоматически масштабирует текстовые блоки, если у них не перегружен FontSize,
+                 но чтобы они визуально оставались чуть меньше основных значений, задаем им аккуратный шаг -->
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="0,0,0,2"/>
         </Style>
         <Style x:Key="ValueStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#E3E3E3"/>
-            <Setter Property="FontSize" Value="13"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="Margin" Value="0,0,0,12"/>
+            <!-- Свойство FontSize намеренно не указываем, чтобы оно бралось напрямую из Window (динамически от кнопок + и -) -->
         </Style>
         <Style x:Key="CodeValueStyle" TargetType="TextBlock" BasedOn="{StaticResource ValueStyle}">
             <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="#B5CEA8"/>
+        </Style>
+        <Style x:Key="FormTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="25">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
+            <!-- Верхняя панель с кнопками масштабирования шрифта -->
             <RowDefinition Height="Auto"/>
+            <!-- Основной контент -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Выбор игры -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,20">
-            <TextBlock Text="ВЫБЕРИТЕ ИГРУ ИЗ БАЗЫ ДАННЫХ:" 
-                       Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
-            <ComboBox x:Name="GamesComboBox" DisplayMemberPath="NameEn" SelectedValuePath="Id" 
-                      SelectionChanged="GamesComboBox_SelectionChanged" Height="34"
-                      Background="#2D2D30" Foreground="White" BorderBrush="#3F3F46" Padding="6,4">
-                <ComboBox.Resources>
-                    <!-- Корректное отображение выпадающего списка в темных тонах -->
-                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#2D2D30" />
-                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="White" />
-                </ComboBox.Resources>
-            </ComboBox>
+        <Grid.ColumnDefinitions>
+            <!-- Левая колонка: Просмотр и управление бэкапами -->
+            <ColumnDefinition Width="1.2*"/>
+            <!-- Разделитель -->
+            <ColumnDefinition Width="20"/>
+            <!-- Правая колонка: Форма добавления/редактирования -->
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ================= ВЕРХНЯЯ ПАНЕЛЬ МАСШТАБА ================= -->
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,15">
+            <TextBlock Text="Шрифт:" Foreground="#8A8A8A" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <Button x:Name="BtnFontMinus" Content="-" Width="30" Height="26" Background="#3E3E42" Foreground="White" BorderBrush="#555555" FontWeight="Bold" Margin="0,0,5,0" Click="BtnFontMinus_Click">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="3"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+            <Button x:Name="BtnFontPlus" Content="+" Width="30" Height="26" Background="#3E3E42" Foreground="White" BorderBrush="#555555" FontWeight="Bold" Click="BtnFontPlus_Click">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="3"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
         </StackPanel>
 
-        <!-- Панель информации и управления -->
-        <Grid x:Name="DetailsPanel" Grid.Row="1" Visibility="Collapsed">
+        <!-- ================= ЛЕВАЯ ЧАСТЬ ================= -->
+        <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Сведения из БД -->
-            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
-                <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="ИНФОРМАЦИЯ О СЕЙВАХ" FontSize="14" FontWeight="Bold" Foreground="#007ACC" Margin="0,0,0,15"/>
+            <!-- Выбор игры -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                <TextBlock Text="ВЫБЕРИТЕ ИГРУ ИЗ БАЗЫ ДАННЫХ:" Foreground="#AAAAAA" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="GamesComboBox" Grid.Column="0" DisplayMemberPath="NameEn" SelectedValuePath="Id" 
+                              SelectionChanged="GamesComboBox_SelectionChanged" Height="34"
+                              Background="#2D2D30" Foreground="White" BorderBrush="#3F3F46" Padding="6,4">
+                        <ComboBox.Resources>
+                            <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#2D2D30" />
+                            <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="White" />
+                        </ComboBox.Resources>
+                    </ComboBox>
+                    <Button x:Name="BtnAddNewGame" Grid.Column="1" Content="+ Добавить игру" Width="120" Margin="10,0,0,0"
+                            Background="#3E3E42" Foreground="White" BorderBrush="#555555" Click="BtnAddNewGame_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </Grid>
+            </StackPanel>
 
-                    <TextBlock Text="Название (En):" Style="{StaticResource LabelStyle}"/>
-                    <TextBlock x:Name="TxtGameName" Style="{StaticResource ValueStyle}" FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+            <!-- Панель информации и управления Бэкапами -->
+            <Grid x:Name="DetailsPanel" Grid.Row="1" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <TextBlock Text="Шаблон пути (БД):" Style="{StaticResource LabelStyle}"/>
-                    <TextBlock x:Name="TxtPatternPath" Style="{StaticResource CodeValueStyle}"/>
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="ИНФОРМАЦИЯ О СЕЙВАХ" FontSize="14" FontWeight="Bold" Foreground="#007ACC" Margin="0,0,0,15"/>
 
-                    <TextBlock Text="Текущий путь на ПК:" Style="{StaticResource LabelStyle}"/>
-                    <TextBlock x:Name="TxtResolvedPath" Style="{StaticResource CodeValueStyle}" Foreground="#569CD6"/>
+                        <TextBlock Text="Название (En):" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock x:Name="TxtGameName" Style="{StaticResource ValueStyle}" FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF"/>
 
-                    <TextBlock Text="Локальная папка бэкапа (\Data\...):" Style="{StaticResource LabelStyle}"/>
-                    <TextBlock x:Name="TxtLocalPath" Style="{StaticResource CodeValueStyle}" Foreground="#4EC9B0"/>
+                        <TextBlock Text="Шаблон пути (БД):" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock x:Name="TxtPatternPath" Style="{StaticResource CodeValueStyle}"/>
 
-                    <Border BorderBrush="#2D2D30" BorderThickness="0,1,0,0" Margin="0,5,0,15"/>
+                        <TextBlock Text="Текущий путь на ПК:" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock x:Name="TxtResolvedPath" Style="{StaticResource CodeValueStyle}" Foreground="#569CD6"/>
 
-                    <!-- Даты последних операций -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Последний бэкап:" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock x:Name="TxtLastBackup" FontWeight="SemiBold" Foreground="#E3E3E3"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Последнее восстановление:" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock x:Name="TxtLastRestore" FontWeight="SemiBold" Foreground="#E3E3E3"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </ScrollViewer>
+                        <TextBlock Text="Локальная папка бэкапа (\Data\...):" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock x:Name="TxtLocalPath" Style="{StaticResource CodeValueStyle}" Foreground="#4EC9B0"/>
 
-            <!-- Кнопки действий -->
-            <Grid Grid.Row="1" Margin="0,15,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                        <Border BorderBrush="#2D2D30" BorderThickness="0,1,0,0" Margin="0,5,0,15"/>
 
-                <!-- Кнопка Создать Бэкап -->
-                <Button x:Name="BtnBackup" Grid.Column="0" Content="Создать бэкап" Height="42" 
-                        Background="#2E5A36" Foreground="#E0E0E0" BorderBrush="#3E6B46" FontWeight="Bold" Click="BtnBackup_Click">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Последний бэкап:" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock x:Name="TxtLastBackup" FontWeight="SemiBold" Foreground="#E3E3E3"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Последнее восстановление:" Style="{StaticResource LabelStyle}"/>
+                                <TextBlock x:Name="TxtLastRestore" FontWeight="SemiBold" Foreground="#E3E3E3"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
 
-                <!-- Кнопка Восстановить -->
-                <Button x:Name="BtnRestore" Grid.Column="2" Content="Восстановить из бэкапа" Height="42" 
-                        Background="#244A73" Foreground="#E0E0E0" BorderBrush="#345A83" FontWeight="Bold" Click="BtnRestore_Click">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="4"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
+                <!-- Нижние кнопки действий -->
+                <Grid Grid.Row="1" Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="15"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="BtnBackup" Grid.Column="0" Content="Создать бэкап" Height="42" 
+                            Background="#2E5A36" Foreground="#E0E0E0" BorderBrush="#3E6B46" FontWeight="Bold" Click="BtnBackup_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
+                    <Button x:Name="BtnRestore" Grid.Column="2" Content="Восстановить из бэкапа" Height="42" 
+                            Background="#244A73" Foreground="#E0E0E0" BorderBrush="#345A83" FontWeight="Bold" Click="BtnRestore_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </Grid>
             </Grid>
         </Grid>
-    </Grid>
 
+        <!-- Вертикальный разделитель колонок -->
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="#2D2D30" BorderThickness="1,0,0,0" Margin="10,0,9,0"/>
+
+        <!-- ================= ПРАВАЯ ЧАСТЬ (ФОРМА) ================= -->
+        <Grid Grid.Row="1" Grid.Column="2" x:Name="FormPanel">
+            <StackPanel>
+                <TextBlock x:Name="FormHeader" Text="ДОБАВИТЬ НОВУЮ ИГРУ" FontSize="14" FontWeight="Bold" Foreground="#007ACC" Margin="0,10,0,15"/>
+
+                <TextBlock Text="Название игры (English):" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="FormInputName" Style="{StaticResource FormTextBoxStyle}"/>
+
+                <TextBlock Text="Шаблон пути сохранения (включая *.sav):" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="FormInputPath" Style="{StaticResource FormTextBoxStyle}"/>
+
+                <TextBlock Text="Подсказка по переменным окружения:" Style="{StaticResource LabelStyle}" Margin="0,5,0,2"/>
+                <TextBlock Foreground="#8A8A8A" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,20">
+                    • <Run Foreground="#569CD6">%LOCALAPPDATA%</Run> → C:\Users\Имя\AppData\Local<LineBreak/>
+                    • <Run Foreground="#569CD6">%APPDATA%</Run> → C:\Users\Имя\AppData\Roaming<LineBreak/>
+                    • <Run Foreground="#569CD6">%USERPROFILE%</Run> → C:\Users\Имя
+                </TextBlock>
+
+                <Button x:Name="BtnSaveGame" Content="Сохранить в базу данных" Height="36" 
+                        Background="#007ACC" Foreground="White" FontWeight="Bold" Click="BtnSaveGame_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button x:Name="BtnCancelEdit" Content="Отмена" Height="30" Margin="0,10,0,0" 
+                        Background="Transparent" Foreground="#8A8A8A" BorderBrush="#3F3F46" Click="BtnCancelEdit_Click" Visibility="Collapsed">
+                    <Button.Resources>
+
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>

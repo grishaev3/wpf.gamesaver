@@ -1,12 +1,12 @@
 ﻿using System.IO;
 
-namespace wpf.gamesaver
+namespace wpf.gamesaver.Types
 {
     public class GameSave
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string NameEn { get; set; } = string.Empty;
-        public string SavePathPattern { get; set; } = string.Empty; // Пример: %LOCALAPPDATA%\MortalShell2\Saved\SaveGames\*.sav
+        public string SavePathPattern { get; set; } = string.Empty;
         public DateTime? LastCopyToBackup { get; set; }
         public DateTime? LastRestoreFromBackup { get; set; }
 
